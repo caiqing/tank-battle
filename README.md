@@ -1,13 +1,18 @@
 # 🛡️ 钢铁前线 Steel Front · 2D 坦克大战
 
+[![在线试玩](https://img.shields.io/badge/🎮_在线试玩-GitHub_Pages-ffb52e?style=for-the-badge&logo=github)](https://caiqing.github.io/tank-battle/)
+
+**▶ 立即开战：<https://caiqing.github.io/tank-battle/>**
+
 纯前端 Canvas 实现的上帝视角（俯视全图）2D 坦克对战游戏，无任何构建依赖，打开即玩。
 
 ## 🚀 运行方式
 
 任选其一：
 
-- **直接打开**：双击 `index.html`（推荐用 Chrome / Edge / Safari 最新版）
-- **本地服务器**（推荐）：
+- **在线游玩**（GitHub Pages，无需安装）：**<https://caiqing.github.io/tank-battle/>**
+- **直接打开**：下载本仓库后双击 `index.html`（推荐用 Chrome / Edge / Safari 最新版）
+- **本地服务器**：
 
   ```bash
   cd tank-battle
