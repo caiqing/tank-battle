@@ -295,6 +295,13 @@ b { color: var(--amber); }
   pointer-events: auto;
   z-index: 30;
 }
+/* 竖屏（折叠屏/平板）：按钮挂到屏幕右下角，不遮挡战场 */
+@media (orientation: portrait) {
+  #touch-controls {
+    position: fixed;
+    bottom: 18px; right: 14px;
+  }
+}
 .tbtn {
   width: 58px; height: 58px;
   border-radius: 50%;
@@ -307,12 +314,6 @@ b { color: var(--amber); }
   background: rgba(90, 102, 71, .9);
   border-color: var(--amber);
   transform: scale(.94);
-}
-
-/* 竖屏提示（仅触屏设备的战斗画面；ID 选择器默认隐藏，优先级高于 .overlay 的 flex） */
-#rotate-hint { display: none; }
-@media (orientation: portrait) {
-  body.touch-device #screen-game.active #rotate-hint { display: flex; }
 }
 
 /* ── 小屏 HUD 压缩 ── */
