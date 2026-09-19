@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>钢铁前线 Steel Front · 2D 坦克大战</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════ 主菜单 ══════════════ -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-bg"></div>
+  <div class="menu-inner">
+    <div class="title-block">
+      <div class="title-stars">★ ★ ★</div>
+      <h1 class="game-title">钢铁前线</h1>
+      <div class="game-subtitle">STEEL FRONT · 2D 坦克大战</div>
+    </div>
+
+    <div class="menu-buttons">
+      <button class="menu-btn btn-vs1" data-action="start-1v1">
+        <span class="btn-icon">⚔️</span>
+        <span class="btn-text">
+          <span class="btn-name">1v1 决斗模式</span>
+          <span class="btn-desc">单车对决 · 击败敌方指挥车</span>
+        </span>
+      </button>
+      <button class="menu-btn btn-horde" data-action="start-horde">
+        <span class="btn-icon">🌊</span>
+        <span class="btn-text">
+          <span class="btn-name">1v多 生存模式</span>
+          <span class="btn-desc">抵御无穷波次 · 越战越强</span>
+        </span>
+      </button>
+      <button class="menu-btn btn-shop" data-action="open-shop">
+        <span class="btn-icon">🛒</span>
+        <span class="btn-text">
+          <span class="btn-name">武器商店</span>
+          <span class="btn-desc">炮弹 · 防护 · 攻击武器</span>
+        </span>
+      </button>
+      <button class="menu-btn btn-help" data-action="open-help">
+        <span class="btn-icon">🎮</span>
+        <span class="btn-text">
+          <span class="btn-name">操作说明</span>
+          <span class="btn-desc">键位与玩法</span>
+        </span>
+      </button>
+    </div>
+
+    <div class="menu-footer">
+      <div class="points-display">🎖️ 战备积分 <b id="menu-points">0</b></div>
+      <div class="menu-stats" id="menu-stats"></div>
+      <button id="btn-reset" class="reset-link" title="清空积分、库存与战绩">重置存档</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 武器商店 ══════════════ -->
+<div id="screen-shop" class="screen">
+  <div class="shop-head">
+    <button class="back-btn" data-action="goto-menu">← 返回基地</button>
+    <h2 class="shop-title">🛒 武器商店</h2>
+    <div class="points-display big">🎖️ 积分 <b id="shop-points">0</b></div>
+  </div>
+  <div class="shop-tabs">
+    <button class="shop-tab active" data-tab="ammo">💣 炮弹</button>
+    <button class="shop-tab" data-tab="weapon">🔫 攻击武器</button>
+    <button class="shop-tab" data-tab="defense">🛡️ 防护装备</button>
+  </div>
+  <div class="shop-grid" id="shop-grid"></div>
+  <div class="shop-tip" id="shop-tip">战斗中按 <b>1~5</b> 切换弹种，按 <b>H</b> 使用维修包，按住 <b>右键/Shift</b> 发射机枪。</div>
+</div>
+
+<!-- ══════════════ 操作说明 ══════════════ -->
+<div id="screen-help" class="screen">
+  <div class="help-panel">
+    <button class="back-btn" data-action="goto-menu">← 返回基地</button>
+    <h2 class="shop-title">🎮 操作说明</h2>
+    <div class="help-body">
+      <div class="help-col">
+        <h3>基本操作</h3>
+        <ul>
+          <li><b>W A S D</b> — 驾驶坦克移动</li>
+          <li><b>鼠标</b> — 炮塔瞄准</li>
+          <li><b>左键</b> — 发射主炮</li>
+          <li><b>右键 / Shift</b> — 并联机枪（需弹药）</li>
+          <li><b>1 ~ 5</b> — 切换炮弹（普通弹无限）</li>
+          <li><b>T</b> — 切换 🤖 AI 托管（自动作战，纯观战）</li>
+          <li><b>H</b> — 使用战地维修包</li>
+          <li><b>P / Esc</b> — 暂停</li>
+        </ul>
+      </div>
+      <div class="help-col">
+        <h3>战场规则</h3>
+        <ul>
+          <li>🧱 <b>砖墙</b>可被炮弹摧毁，⚙️ <b>钢墙</b>无法击穿</li>
+          <li>标准弹与穿甲弹<b>碰墙可弹射一次</b>，弹着点产生溅射伤害——善用跳弹攻击墙后目标</li>
+          <li>🤖 按 <b>T</b> 开启 AI 托管：自动走位、躲弹、预判开火、选弹与维修</li>
+          <li>击毁敌车立即获得积分，敌车可能掉落补给</li>
+          <li><b>1v1</b>：击败敌方单车即胜，胜场越多敌车越强</li>
+          <li><b>1v多</b>：抵御一波波敌军，清波有额外奖励</li>
+          <li>积分在商店购买炮弹、防护与攻击装备</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 战斗画面 ══════════════ -->
+<div id="screen-game" class="screen">
+  <div class="game-stage">
+    <canvas id="game-canvas" width="1600" height="1000"></canvas>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-top-left">
+        <div class="hp-wrap">
+          <div class="bar hp"><div id="hud-hp" class="bar-fill"></div><span id="hud-hp-text" class="bar-text">100/100</span></div>
+          <div class="bar shield"><div id="hud-shield" class="bar-fill"></div><span id="hud-shield-text" class="bar-text">0</span></div>
+        </div>
+        <div class="kit-row">🔧 维修包 <b id="hud-repair">0</b> <span class="key-hint">[H]</span></div>
+      </div>
+
+      <div class="hud-top-center">
+        <div id="hud-mode-label" class="mode-label">1v1 决斗</div>
+        <div id="hud-wave-label" class="wave-label"></div>
+      </div>
+
+      <div class="hud-top-right">
+        <div class="score-pill">🎖️ <b id="hud-score">0</b></div>
+        <div class="score-sub">击毁 <b id="hud-kills">0</b></div>
+        <div class="hud-btns">
+          <button id="btn-mute" class="round-btn" title="静音">🔊</button>
+          <button id="btn-pause" class="round-btn" title="暂停">⏸</button>
+        </div>
+      </div>
+
+      <div class="hud-bottom">
+        <div id="ammo-bar" class="ammo-bar"></div>
+        <div id="mg-cell" class="mg-cell hidden">🔫 机枪 <b id="hud-mg-ammo">0</b> <span class="key-hint">[右键]</span></div>
+      </div>
+
+      <div id="announce" class="announce hidden"></div>
+    </div>
+
+    <!-- 暂停面板 -->
+    <div id="pause-overlay" class="overlay hidden">
+      <div class="overlay-panel">
+        <h2>⏸ 暂停</h2>
+        <button class="overlay-btn" data-action="resume">继续战斗</button>
+        <button class="overlay-btn ghost" data-action="abandon">放弃战斗（积分已入账）</button>
+      </div>
+    </div>
+
+    <!-- 结算面板 -->
+    <div id="result-overlay" class="overlay hidden">
+      <div class="overlay-panel result">
+        <div id="result-banner" class="result-banner">胜利</div>
+        <div id="result-stats" class="result-stats"></div>
+        <div class="result-points">本场获得 🎖️ <b id="result-points">0</b> 积分</div>
+        <div class="overlay-btns">
+          <button class="overlay-btn" data-action="retry">再来一局</button>
+          <button class="overlay-btn" data-action="result-shop">前往商店</button>
+          <button class="overlay-btn ghost" data-action="goto-menu">返回基地</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/save.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
