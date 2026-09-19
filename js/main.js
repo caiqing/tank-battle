@@ -7,6 +7,10 @@
   Save.load();
   SFX.setMuted(!!Save.data.muted);
 
+  // 触屏设备标记（竖屏遮罩等 CSS 依赖）
+  const TOUCH_DEVICE = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+  if (TOUCH_DEVICE) document.body.classList.add("touch-device");
+
   const canvas = document.getElementById("game-canvas");
   Input.attach(canvas);
 
@@ -24,6 +28,8 @@
         UI.hideOverlays();
         UI.goto("game");
         Game.start(act === "start-1v1" ? "vs1" : "horde");
+        // 触屏设备显示动作按钮
+        document.getElementById("touch-controls").classList.toggle("hidden", !TOUCH_DEVICE);
         break;
       }
       case "open-shop":
@@ -92,6 +98,32 @@
       localStorage.removeItem("steel_front_save_v1");
       location.reload();
     }
+  });
+
+  /* ── 触控动作按钮 ── */
+  const hold = (el, on, off) => {
+    const start = (e) => { e.preventDefault(); el.classList.add("pressed"); SFX.resume(); on(); };
+    const endFn = (e) => { if (e) e.preventDefault(); el.classList.remove("pressed"); off(); };
+    el.addEventListener("touchstart", start, { passive: false });
+    el.addEventListener("touchend", endFn);
+    el.addEventListener("touchcancel", endFn);
+    // 桌面兼容（触屏笔记本用鼠标点）
+    el.addEventListener("mousedown", start);
+    window.addEventListener("mouseup", () => { if (el.classList.contains("pressed")) endFn(); });
+  };
+  hold(document.getElementById("tb-mg"),
+    () => { Input.auxDown = true; },
+    () => { Input.auxDown = false; });
+  document.getElementById("tb-repair").addEventListener("click", () => {
+    if (window.Game && Game.player) Game.player.useRepair(Game);
+  });
+  document.getElementById("tb-ai").addEventListener("click", () => {
+    if (window.Game) Game.toggleAutopilot();
+  });
+
+  /* ── HUD 维修包点击（移动端无 H 键） ── */
+  document.querySelector(".kit-row").addEventListener("click", () => {
+    if (window.Game && Game.player) Game.player.useRepair(Game);
   });
 
   /* ── 初始进入主菜单 ── */

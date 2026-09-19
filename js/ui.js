@@ -151,8 +151,33 @@ const UI = {
         <span class="ammo-key">${a.slot}</span>
         <span class="ammo-name">${a.name}</span>
         <span class="ammo-count">${a.infinite ? "∞" : count}</span>`;
+      // 点击/触点切换弹种（桌面与移动端通用）
+      cell.addEventListener("click", () => {
+        if (game.player.ammo[key] > 0) {
+          game.player.curAmmo = key;
+          this.refreshAmmoBar(game);
+          SFX.click();
+        }
+      });
       bar.appendChild(cell);
     }
+  },
+
+  /* ── 虚拟摇杆视觉 ── */
+  showJoystick(isLeft, x, y) {
+    const el = document.getElementById(isLeft ? "joy-left" : "joy-right");
+    el.classList.remove("hidden");
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+    this._setNub(isLeft, 0, 0);
+  },
+  moveJoystick(isLeft, dx, dy) { this._setNub(isLeft, dx, dy); },
+  hideJoystick(isLeft) {
+    document.getElementById(isLeft ? "joy-left" : "joy-right").classList.add("hidden");
+  },
+  _setNub(isLeft, dx, dy) {
+    const nub = document.querySelector(`#${isLeft ? "joy-left" : "joy-right"} .joy-nub`);
+    nub.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   },
 
   announce(text) {

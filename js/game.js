@@ -19,12 +19,22 @@ function turnToward(cur, target, maxStep) {
   return cur + clamp(d, -maxStep, maxStep);
 }
 
+/* 触屏设备检测（用于初始展示触控 UI 与特效减量） */
+const TOUCH_DEVICE = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+
 /* ────────── 输入 ────────── */
 const Input = {
   keys: new Set(),
   mouseX: 800, mouseY: 500,
   mouseDown: false,   // 左键
   auxDown: false,     // 右键或 Shift
+
+  // 触屏状态
+  touchMode: false,   // 首次触摸后激活（覆盖键鼠输入源）
+  leftStick: { id: null, cx: 0, cy: 0, dx: 0, dy: 0, active: false },
+  rightStick: { id: null, cx: 0, cy: 0, dx: 0, dy: 0, active: false },
+  JOY_MAX: 56,        // 摇杆最大行程(px)
+  JOY_DEAD: 14,       // 死区(px)
 
   attach(canvas) {
     window.addEventListener("keydown", (e) => {
@@ -54,9 +64,73 @@ const Input = {
       if (e.button === 2) this.auxDown = false;
     });
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+    this.attachTouch(canvas);
   },
 
+  /* ── 触屏：动态双摇杆（左半屏驾驶 / 右半屏瞄准开火） ──
+     无条件绑定（桌面浏览器不会触发 touch 事件，无副作用）；
+     touchMode 仅在真实触摸发生时激活，覆盖键鼠输入源 */
+  attachTouch(canvas) {
+    const start = (e) => {
+      e.preventDefault();
+      SFX.resume();
+      if (!this.touchMode) {
+        this.touchMode = true;
+        UI.announce("🕹 左侧驾驶 · 右侧瞄准开火");
+      }
+      const rect = canvas.getBoundingClientRect();
+      const midX = rect.width > 0 ? rect.left + rect.width / 2 : window.innerWidth / 2;
+      for (const t of e.changedTouches) {
+        const isLeft = t.clientX < midX;
+        const stick = isLeft ? this.leftStick : this.rightStick;
+        if (stick.id !== null) continue;
+        stick.id = t.identifier;
+        stick.cx = t.clientX; stick.cy = t.clientY;
+        stick.dx = 0; stick.dy = 0; stick.active = false;
+        UI.showJoystick(isLeft, t.clientX, t.clientY);
+      }
+    };
+    const move = (e) => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        for (const stick of [this.leftStick, this.rightStick]) {
+          if (stick.id !== t.identifier) continue;
+          const dx = t.clientX - stick.cx, dy = t.clientY - stick.cy;
+          const d = Math.hypot(dx, dy);
+          const cl = Math.min(d, this.JOY_MAX);
+          stick.dx = d > 0 ? (dx / d) * cl : 0;
+          stick.dy = d > 0 ? (dy / d) * cl : 0;
+          stick.active = d > this.JOY_DEAD;
+          UI.moveJoystick(stick === this.leftStick, stick.dx, stick.dy);
+        }
+      }
+    };
+    const end = (e) => {
+      for (const t of e.changedTouches) {
+        for (const stick of [this.leftStick, this.rightStick]) {
+          if (stick.id !== t.identifier) continue;
+          stick.id = null; stick.dx = stick.dy = 0; stick.active = false;
+          UI.hideJoystick(stick === this.leftStick);
+        }
+      }
+    };
+    canvas.addEventListener("touchstart", start, { passive: false });
+    canvas.addEventListener("touchmove", move, { passive: false });
+    canvas.addEventListener("touchend", end);
+    canvas.addEventListener("touchcancel", end);
+  },
+
+  /* 当前移动轴：触屏用左摇杆，否则键盘 */
   axis() {
+    if (this.touchMode) {
+      const s = this.leftStick;
+      if (s.id !== null && s.active) {
+        const d = Math.hypot(s.dx, s.dy);
+        const n = Math.min(1, d / this.JOY_MAX);
+        return { x: (s.dx / d) * n, y: (s.dy / d) * n, active: true };
+      }
+      return { x: 0, y: 0, active: false };
+    }
     let x = 0, y = 0;
     if (this.keys.has("w") || this.keys.has("arrowup")) y -= 1;
     if (this.keys.has("s") || this.keys.has("arrowdown")) y += 1;
@@ -65,7 +139,16 @@ const Input = {
     const len = Math.hypot(x, y);
     return len > 0 ? { x: x / len, y: y / len, active: true } : { x: 0, y: 0, active: false };
   },
-  mgWanted() { return this.auxDown || this.keys.has("shift"); },
+
+  /* 主炮开火意图：触屏 = 右摇杆推出死区（瞄准即自动开火） */
+  fireWanted() {
+    return this.touchMode ? this.rightStick.active : this.mouseDown;
+  },
+
+  /* 机枪意图：触屏 = 🔫 按钮按下；键鼠 = 右键/Shift */
+  mgWanted() {
+    return this.touchMode ? this.auxDown : (this.auxDown || this.keys.has("shift"));
+  },
 };
 
 /* ────────── 地图 ────────── */
@@ -396,9 +479,9 @@ class PlayerTank extends Tank {
       if (this.comboTimer <= 0) this.combo = 0;
     }
 
-    // ── 控制源：手动键鼠 or AI 托管 ──
-    let aimX = Input.mouseX, aimY = Input.mouseY;
-    let move, wantFire = Input.mouseDown, wantMg = Input.mgWanted();
+    // ── 控制源：手动键鼠 / 触屏摇杆 / AI 托管 ──
+    let aimX, aimY;
+    let move, wantFire, wantMg;
     if (this.autopilot) {
       this._aiPerFrame(game);
       this._aiDecide(game, dt);
@@ -406,8 +489,25 @@ class PlayerTank extends Tank {
       move = this.aiMove;
       wantFire = this.aiFire;
       wantMg = this.aiMg;
-    } else {
+    } else if (Input.touchMode) {
       move = Input.axis();
+      wantFire = Input.fireWanted();
+      wantMg = Input.mgWanted();
+      if (Input.rightStick.active) {
+        // 瞄准点 = 玩家位置沿右摇杆方向延伸
+        const ang = Math.atan2(Input.rightStick.dy, Input.rightStick.dx);
+        aimX = this.x + Math.cos(ang) * 400;
+        aimY = this.y + Math.sin(ang) * 400;
+      } else {
+        // 未触瞄准：保持炮塔当前朝向
+        aimX = this.x + Math.cos(this.turret) * 400;
+        aimY = this.y + Math.sin(this.turret) * 400;
+      }
+    } else {
+      aimX = Input.mouseX; aimY = Input.mouseY;
+      move = Input.axis();
+      wantFire = Input.mouseDown;
+      wantMg = Input.mgWanted();
     }
 
     // ── 移动 ──
@@ -1059,6 +1159,14 @@ const Game = {
   },
 
   /* ── 按键事件（由 Input 转发）── */
+  toggleAutopilot() {
+    const p = this.player;
+    if (!p || !p.alive || this.state !== "running") return;
+    p.autopilot = !p.autopilot;
+    SFX.click();
+    UI.announce(p.autopilot ? "🤖 AI 托管已开启 · 按 T 或点 🤖 切回" : "🎮 已切回手动操控");
+  },
+
   onKey(k) {
     if (this.state === "over") {
       // 结算界面：Esc 直接返回基地
@@ -1079,15 +1187,7 @@ const Game = {
     }
     if (this.state !== "running") return;
     // 切换 AI 托管
-    if (k === "t") {
-      const p = this.player;
-      if (p && p.alive) {
-        p.autopilot = !p.autopilot;
-        SFX.click();
-        UI.announce(p.autopilot ? "🤖 AI 托管已开启 · 按 T 切回手动" : "🎮 已切回手动操控");
-      }
-      return;
-    }
+    if (k === "t") { this.toggleAutopilot(); return; }
     // 切换弹种
     const slotKey = { 1: "std", 2: "ap", 3: "he", 4: "sg", 5: "ms" }[k];
     if (slotKey && this.player.ammo[slotKey] > 0) {
@@ -1110,7 +1210,7 @@ const Game = {
   },
 
   addParticle(x, y, vx, vy, life, size, color) {
-    if (this.particles.length > 420) return;
+    if (this.particles.length > (TOUCH_DEVICE ? 230 : 420)) return;
     this.particles.push({ x, y, vx, vy, life, maxLife: life, size, color });
   },
 
@@ -1130,7 +1230,7 @@ const Game = {
   },
 
   explodeFX(x, y, size) {
-    const n = Math.round(16 + size * 12);
+    const n = Math.round((16 + size * 12) * (TOUCH_DEVICE ? 0.6 : 1));
     for (let i = 0; i < n; i++) {
       const a = rand(0, TAU), sp = rand(30, 260 * size);
       const c = Math.random() < 0.35 ? "#ffe8a8" : (Math.random() < 0.5 ? "#ff9d3c" : "#e2543e");

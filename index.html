@@ -94,6 +94,18 @@
         </ul>
       </div>
       <div class="help-col">
+        <h3>触屏操作（手机 / 平板）</h3>
+        <ul>
+          <li>🖐 <b>左侧屏幕</b> — 虚拟摇杆驾驶坦克</li>
+          <li>🖐 <b>右侧屏幕</b> — 摇杆瞄准并<b>自动开火</b></li>
+          <li>🔫 按钮（按住）— 并联机枪</li>
+          <li>🔧 按钮 — 使用维修包</li>
+          <li>🤖 按钮 — 切换 AI 托管</li>
+          <li>点击底部弹种栏切换炮弹</li>
+          <li>建议横屏游玩</li>
+        </ul>
+      </div>
+      <div class="help-col">
         <h3>战场规则</h3>
         <ul>
           <li>🧱 <b>砖墙</b>可被炮弹摧毁，⚙️ <b>钢墙</b>无法击穿</li>
@@ -144,6 +156,26 @@
       </div>
 
       <div id="announce" class="announce hidden"></div>
+    </div>
+
+    <!-- 虚拟摇杆（触屏设备，触摸时动态出现） -->
+    <div id="joy-left" class="joystick hidden"><div class="joy-base"><div class="joy-nub"></div></div></div>
+    <div id="joy-right" class="joystick hidden"><div class="joy-base"><div class="joy-nub"></div></div></div>
+
+    <!-- 触控动作按钮 -->
+    <div id="touch-controls" class="hidden">
+      <button class="tbtn" id="tb-mg" title="机枪（按住）">🔫</button>
+      <button class="tbtn" id="tb-repair" title="维修包">🔧</button>
+      <button class="tbtn" id="tb-ai" title="AI 托管">🤖</button>
+    </div>
+
+    <!-- 竖屏提示（触屏设备，由 CSS 媒体查询控制显示） -->
+    <div id="rotate-hint" class="overlay">
+      <div class="overlay-panel">
+        <div style="font-size:44px">📱↻</div>
+        <h2>请横屏游玩</h2>
+        <div class="result-stats">旋转设备至横屏，获得完整战场视野</div>
+      </div>
     </div>
 
     <!-- 暂停面板 -->
